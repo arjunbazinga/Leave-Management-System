@@ -15,4 +15,7 @@
 * To exit the virtual environment, type
     `deactivate`
 
-
+# Part - III -> Starting the server
+* To start the server, enter the virtual environment, cd into iiticseleave folder, and type
+    `python manage.py runserver`
+* The website can then be accessed on `localhost:8000` from any web browser
