@@ -25,7 +25,7 @@ SECRET_KEY = '^@!ltg-g2@tq5w$n_j2)hk&b&cv6*)8!=051(wl@bly^qt@j!j'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'accounts',
+    'leave',
 ]
 
 MIDDLEWARE = [
@@ -66,6 +68,8 @@ TEMPLATES = [
         },
     },
 ]
+
+AUTH_USER_MODEL = 'accounts.User'
 
 WSGI_APPLICATION = 'iiticseleave.wsgi.application'
 
