@@ -8,11 +8,15 @@ class Application(models.Model):
     endDate = models.DateField()
     reason = models.TextField()
     address = models.TextField()
-    applicant = models.ForeignKey('accounts.User',on_delete=models.PROTECT)
+    applicant = models.ForeignKey('accounts.User',on_delete=models.PROTECT,null=True)
     submitted = models.BooleanField(default = False)
     recommended = models.BooleanField(default = False)
     approved = models.BooleanField(default = False)
-    
+    approver_comments = models.TextField(blank=True, null=True)
+    recommender_comments = models.TextField(blank=True, null=True)
+    approved_by = models.ForeignKey('accounts.User',on_delete=models.PROTECT, blank=True, null=True, related_name="Approved_by")
+    recommended_by = models.ForeignKey('accounts.User',on_delete=models.PROTECT, blank=True, null=True, related_name="Recommended_by")
+
     choices = (
         ('EL', 'Earned Leave'),
         ('HPL', 'Half Pay Leave'),
@@ -38,8 +42,7 @@ class Application(models.Model):
     @property
     def is_recommended(self):
         return self.recommended
-        
+
     @property
     def is_approved(self):
         return self.approved
-    

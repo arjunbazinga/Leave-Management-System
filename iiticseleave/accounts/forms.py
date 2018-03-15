@@ -11,7 +11,7 @@ class UserCreationForm(forms.ModelForm):
 
     class Meta:
         model = accounts.models.User
-        fields = ('firstName', 'lastName', 'email', 'active', 'supervisor', 'recommender', 'admin', 'approver')
+        fields = ('firstName', 'lastName', 'email', 'user_type', 'active', 'applicant')
 
     def clean_password2(self):
         # Check that the two password entries match
@@ -20,7 +20,7 @@ class UserCreationForm(forms.ModelForm):
         if password1 and password2 and password1 != password2:
             raise forms.ValidationError("Passwords don't match")
         return password2
-    
+
     def save(self, commit=True):
         user = super(UserCreationForm, self).save(commit=False)
         user.set_password(self.cleaned_data["password1"])
@@ -30,47 +30,47 @@ class UserCreationForm(forms.ModelForm):
 
 
 class UserChangeForm(forms.ModelForm):
-    """A form for updating users. Includes all the fields on
-    the user, but replaces the password field with admin's
-    password hash display field.
-    """
     password = ReadOnlyPasswordHashField()
 
     class Meta:
         model = accounts.models.User
-        fields = ('firstName', 'lastName', 'email', 'password', 'active', 'supervisor', 'recommender', 'admin', 'approver')
+        fields = ('firstName', 'lastName', 'email', 'password', 'active', 'user_type', 'applicant')
 
     def clean_password(self):
-        # Regardless of what the user provides, return the initial value.
-        # This is done here, rather than on the field, because the
-        # field does not have access to the initial value
         return self.initial["password"]
 
 
 class UserAdmin(BaseUserAdmin):
-    # The forms to add and change user instances
+    def get_queryset(self, request):
+        qs = super(UserAdmin, self).get_queryset(request)
+        if request.user.is_admin or request.user.is_supervisor:
+            return qs
+        return qs.filter(id=request.user.id)
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj and not request.user.is_admin: # editing an existing object
+            return list(self.readonly_fields) + ['applicant','user_type']
+        return self.readonly_fields
+
+
     form = UserChangeForm
-    add_form =    UserCreationForm
+    add_form = UserCreationForm
 
-    # The fields to be used in displaying the User model.
-    # These override the definitions on the base UserAdmin
-    # that reference specific fields on auth.User.
-    list_display = ('firstName', 'lastName', 'email', 'active', 'supervisor', 'recommender', 'admin', 'approver')
+    list_display = ('firstName', 'lastName', 'email', 'user_type', 'active', 'applicant')
 
-    list_filter = ('admin','supervisor','approver','recommender')
+    list_filter = ('user_type', 'applicant', 'active')
     fieldsets = (
-        (None, {'fields': ('email', 'password')}),
-        ('Personal info', {'fields': ('firstName','lastName')}),
-        ('Permissions', {'fields': ('admin','supervisor','approver','recommender')}),
+        (None, {'fields': ('email','password',)}),
+        ('Personal info', {'fields': ('firstName','lastName','department','designation')}),
+        ('Permissions', {'fields': ('user_type','applicant',)}),
     )
-    # add_fieldsets is not a standard ModelAdmin attribute. UserAdmin
-    # overrides get_fieldsets to use this attribute when creating a user.
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('firstName', 'lastName', 'email', 'password1', 'password2', 'active', 'supervisor', 'recommender', 'admin', 'approver')}
+            'fields': ('firstName', 'lastName', 'email', 'password1', 'password2', 'user_type', 'active', 'applicant',)}
         ),
     )
-    search_fields = ('firstName', 'lastName', 'email', 'active', 'supervisor', 'recommender', 'admin', 'approver')
+    search_fields = ('firstName', 'lastName', 'email', 'active', 'user_type', 'applicant')
+    readonly_fields = ['department']
     ordering = ('email',)
     filter_horizontal = ()

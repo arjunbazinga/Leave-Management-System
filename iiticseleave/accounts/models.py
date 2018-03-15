@@ -5,9 +5,6 @@ from django.contrib.auth.models import (
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None):
-        """
-        Creates and saves a User with the given email and password.
-        """
         if not email:
             raise ValueError('Users must have an email address')
 
@@ -17,58 +14,46 @@ class UserManager(BaseUserManager):
         user = self.model(
             email=self.normalize_email(email),
         )
-
+        user.user_type = 4
         user.set_password(password)
         user.save(using=self._db)
         return user
 
     def create_supervisor_user(self, email, password):
-        """
-        Creates and saves a staff user with the given email and password.
-        """
         user = self.create_user(
             email,
             password=password,
         )
-        user.supervisor = True
+        user.user_type = 1
         user.save(using=self._db)
         return user
 
     def create_recommendor_user(self, email, password):
-        """
-        Creates and saves a staff user with the given email and password.
-        """
         user = self.create_user(
             email,
             password=password,
         )
-        user.recommendor = True
+        user.user_type = 2
         user.save(using=self._db)
         return user
 
     def create_approver_user(self, email, password):
-        """
-        Creates and saves a staff user with the given email and password.
-        """
         user = self.create_user(
             email,
             password=password,
         )
-        user.approver = True
+        user.user_type = 3
         user.save(using=self._db)
         return user
 
 
 
     def create_superuser(self, email, password):
-        """
-        Creates and saves a superuser with the given email and password.
-        """
         user = self.create_user(
             email,
             password=password,
         )
-        user.admin = True
+        user.user_type = 0
         user.save(using=self._db)
         return user
 
@@ -79,58 +64,66 @@ class User(AbstractBaseUser):
         max_length=255,
         unique=True,
     )
+    user_types = ((0, 'Admin'),
+        (1, 'Supervisor'),
+        (2, 'Recommender'),
+        (3, 'Approver'),
+        (4, 'Standard')
+        )
     firstName = models.CharField(max_length=255)
-    lastName = models.CharField(max_length=255)
-    department = 'CSE'
+    lastName = models.CharField(max_length=255, blank=True, null=True)
+    department = models.CharField(default='CSE',max_length=5)
     active = models.BooleanField(default=True)
-    supervisor = models.BooleanField(default=False) 
-    approver = models.BooleanField(default=False) 
-    recommender = models.BooleanField(default=False)
-    admin = models.BooleanField(default=False) # a superuser
-
+    applicant = models.BooleanField(default=False)
+    user_type = models.IntegerField(choices=user_types, default=4)
     c = (
         (0, 'Associate Professor'),
         (1, 'Assistant Professor'),
         (2, 'Professor'),
         (3, 'Other'))
-    designation = models.CharField(choices = c, max_length = 1, default = 0)
+    designation = models.IntegerField(choices = c, default = 3)
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = [] # Email & Password are required by default.
 
+
     def get_full_name(self):
         # The user is identified by their email address
-        return str(self.firstName) + " " + str(self.lastName)
+        ans  = str(self.firstName)
+        if self.lastName is not None:
+            ans += " " + str(self.lastName)
+        return ans
 
     def get_short_name(self):
         return self.firstName
 
     def __str__(self):              # __unicode__ on Python 2
-        return self.email
+        return self.get_full_name()
 
     def has_perm(self, perm, obj=None):
         "Does the user have a specific permission?"
-        # Simplest possible answer: Yes, always
-        return True
+        if perm in ['accounts.change_user', 'leave.change_application']:
+            return True
+        if self.is_admin:
+            return True
+        if self.is_applicant and perm in ['leave.add_application', 'leave.change_application', 'leave.delete_application']:
+            return True
+        return False
 
     def has_module_perms(self, app_label):
         "Does the user have permissions to view the app `app_label`?"
-        # Simplest possible answer: Yes, always
-        print(app_label)
-        # if self.is_admin and app_label in ['accounts']:
         return True
-        return False
 
     @property
     def is_supervisor(self):
         "Is the user a supervisor?"
-        return self.supervisor
+        return self.user_type == 1
 
     @property
     def is_recommender(self):
         "Is the user a recommender?"
-        return self.recommender
+        return self.user_type == 2
 
     @property
     def is_staff(self):
@@ -140,17 +133,27 @@ class User(AbstractBaseUser):
     @property
     def is_approver(self):
         "Is the user an approver?"
-        return self.approver
+        return self.user_type == 3
+
+    @property
+    def is_standard(self):
+        "Is the user standard?"
+        return self.user_type == 4
 
     @property
     def is_admin(self):
         "Is the user an admin member?"
-        return self.admin
+        return self.user_type == 0
 
     @property
     def is_active(self):
         "Is the user active?"
         return self.active
+
+    @property
+    def is_applicant(self):
+        "Is the user an applicant?"
+        return self.applicant
 
 
 

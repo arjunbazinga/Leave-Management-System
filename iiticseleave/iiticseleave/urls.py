@@ -15,10 +15,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.conf.urls import url
 
-admin.site.site_header = "IITI Leave Management System"
-admin.site.site_title = "IITI Leave Management System"
-
+admin.site.site_header = "IITI CSE Leave Management System"
+admin.site.site_title = "IITI CSE Leave Management System"
+admin.site.index_title = ""
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    url(r'^', admin.site.urls),
 ]
