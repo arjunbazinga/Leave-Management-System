@@ -1,7 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import (
-    BaseUserManager, AbstractBaseUser
-)
+from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None):
@@ -10,7 +8,7 @@ class UserManager(BaseUserManager):
 
         if not password:
             raise ValueError('Users must have a password ')
-        
+
         user = self.model(
             email=self.normalize_email(email),
         )
@@ -19,44 +17,11 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_supervisor_user(self, email, password):
-        user = self.create_user(
-            email,
-            password=password,
-        )
-        user.user_type = 1
-        user.save(using=self._db)
-        return user
-
-    def create_recommendor_user(self, email, password):
-        user = self.create_user(
-            email,
-            password=password,
-        )
-        user.user_type = 2
-        user.save(using=self._db)
-        return user
-
-    def create_approver_user(self, email, password):
-        user = self.create_user(
-            email,
-            password=password,
-        )
-        user.user_type = 3
-        user.save(using=self._db)
-        return user
-
-
-
     def create_superuser(self, email, password):
-        user = self.create_user(
-            email,
-            password=password,
-        )
+        user = self.create_user(email,password)
         user.user_type = 0
         user.save(using=self._db)
         return user
-
 
 class User(AbstractBaseUser):
     email = models.EmailField(
@@ -65,23 +30,27 @@ class User(AbstractBaseUser):
         unique=True,
     )
     user_types = ((0, 'Admin'),
-        (1, 'Supervisor'),
-        (2, 'Recommender'),
-        (3, 'Approver'),
-        (4, 'Standard')
-        )
+                  (1, 'Supervisor'),
+                  (2, 'Recommender'),
+                  (3, 'Approver'),
+                  (4, 'Standard')
+                 )
+
     firstName = models.CharField(max_length=255)
     lastName = models.CharField(max_length=255, blank=True, null=True)
     department = models.CharField(default='CSE',max_length=5)
     active = models.BooleanField(default=True)
     applicant = models.BooleanField(default=False)
     user_type = models.IntegerField(choices=user_types, default=4)
-    c = (
-        (0, 'Associate Professor'),
+    c = ((0, 'Associate Professor'),
         (1, 'Assistant Professor'),
         (2, 'Professor'),
         (3, 'Other'))
-    designation = models.IntegerField(choices = c, default = 3)
+    designation = models.IntegerField(choices=c, default=3)
+    recommender = models.ForeignKey('accounts.User',
+                                    on_delete=models.PROTECT,
+                                    null=True)
+
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
@@ -89,7 +58,6 @@ class User(AbstractBaseUser):
 
 
     def get_full_name(self):
-        # The user is identified by their email address
         ans  = str(self.firstName)
         if self.lastName is not None:
             ans += " " + str(self.lastName)
@@ -98,7 +66,7 @@ class User(AbstractBaseUser):
     def get_short_name(self):
         return self.firstName
 
-    def __str__(self):              # __unicode__ on Python 2
+    def __str__(self):
         return self.get_full_name()
 
     def has_perm(self, perm, obj=None):
@@ -128,7 +96,7 @@ class User(AbstractBaseUser):
     @property
     def is_staff(self):
         "Is the user a staff?"
-        return True #everyone is a staff
+        return True
 
     @property
     def is_approver(self):
@@ -154,6 +122,3 @@ class User(AbstractBaseUser):
     def is_applicant(self):
         "Is the user an applicant?"
         return self.applicant
-
-
-
