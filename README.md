@@ -1,2 +1,2 @@
-# Group-B
-Software engineering project on leave management
+# Leave management System 
+Approver, reccomender, email notifications
